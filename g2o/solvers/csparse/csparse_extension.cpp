@@ -61,7 +61,6 @@ namespace csparse_extension {
       cs_ltsolve (N->L, dx.data()) ;          /* x = L'\x */
       cs_pvec (S->pinv, dx.data(), db.data(), n) ;    /* b = P'*x */
 
-
       std::copy_n(db.begin(), n, b);
       std::copy_n(dx.begin(), n, x);
     }
@@ -103,7 +102,7 @@ namespace csparse_extension {
       x [k] = 0 ;                                 /* x (0:k) is now zero */
       for (p = Cp [k] ; p < Cp [k+1] ; p++)       /* x = full(triu(C(:,k))) */
       {
-        if (Ci [p] <= k) x [Ci [p]] = (number_t)Cx [p] ;
+        if (Ci [p] <= k) x [Ci [p]] = static_cast<number_t>(Cx [p]) ;
       }
       d = x [k] ;                     /* d = C(k,k) */
       x [k] = 0 ;                     /* clear x for k+1st iteration */
@@ -111,22 +110,22 @@ namespace csparse_extension {
       for ( ; top < n ; top++)    /* solve L(0:k-1,0:k-1) * x = C(:,k) */
       {
         i = s [top] ;               /* s [top..n-1] is pattern of L(k,:) */
-        lki = x [i] / (number_t)Lx [Lp [i]] ; /* L(k,i) = x (i) / L(i,i) */
+        lki = x [i] / static_cast<number_t>(Lx [Lp [i]]) ; /* L(k,i) = x (i) / L(i,i) */
         x [i] = 0 ;                 /* clear x for k+1st iteration */
         for (p = Lp [i] + 1 ; p < c [i] ; p++)
         {
-          x [Li [p]] -= Lx [p] * lki ;
+          x [Li [p]] -= static_cast<number_t>(Lx [p]) * lki ;
         }
         d -= lki * lki ;            /* d = d - L(k,i)*L(k,i) */
         p = c [i]++ ;
         Li [p] = k ;                /* store L(k,i) in column i */
-        Lx [p] = lki ;
+        Lx [p] = static_cast<double>(lki) ;
       }
       /* --- Compute L(k,k) ----------------------------------------------- */
       if (d <= 0) return (cs_ndone (N, E, NULL, NULL, 0)) ; /* not pos def */
       p = c [k]++ ;
       Li [p] = k ;                /* store L(k,k) = sqrt (d) in column k */
-      Lx [p] = sqrt (d) ;
+      Lx [p] = static_cast<double>(sqrt (d)) ;
     }
     Lp [n] = cp [n] ;               /* finalize L */
     return (cs_ndone (N, E, NULL, NULL, 1)) ; /* success: free E,s,x; return N */
