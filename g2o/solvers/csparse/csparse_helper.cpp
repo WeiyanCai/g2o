@@ -73,25 +73,25 @@ namespace csparse_extension {
     if (A->nz == -1) { // CCS matrix
       const int* Ap = A->p;
       const int* Ai = A->i;
-      const number_t* Ax = A->x;
+      const double* Ax = A->x;
       for (int i=0; i < cols; i++) {
         const int& rbeg = Ap[i];
         const int& rend = Ap[i+1];
         for (int j = rbeg; j < rend; j++) {
-          entries.push_back(SparseMatrixEntry(Ai[j], i, Ax[j]));
+          entries.emplace_back(SparseMatrixEntry(Ai[j], i, static_cast<number_t>(Ax[j])));
           if (upperTriangular && Ai[j] != i)
-            entries.push_back(SparseMatrixEntry(i, Ai[j], Ax[j]));
+            entries.emplace_back(SparseMatrixEntry(i, Ai[j], static_cast<number_t>(Ax[j])));
         }
       }
     } else { // Triplet matrix
-      entries.reserve(A->nz);
+      entries.reserve(static_cast<size_t>(A->nz));
       int *Aj = A->p;             // column indeces
       int *Ai = A->i;             // row indices
-      number_t *Ax = A->x;          // values;
+      double *Ax = A->x;          // values;
       for (int i = 0; i < A->nz; ++i) {
-        entries.push_back(SparseMatrixEntry(Ai[i], Aj[i], Ax[i]));
+        entries.emplace_back(SparseMatrixEntry(Ai[i], Aj[i], static_cast<number_t>(Ax[i])));
         if (upperTriangular && Ai[i] != Aj[i])
-          entries.push_back(SparseMatrixEntry(Aj[i], Ai[i], Ax[i]));
+          entries.emplace_back(SparseMatrixEntry(Aj[i], Ai[i], static_cast<number_t>(Ax[i])));
       }
     }
     sort(entries.begin(), entries.end(), SparseMatrixEntryColSort());

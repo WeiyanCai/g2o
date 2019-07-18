@@ -101,7 +101,7 @@ namespace g2o {
     VertexSE3 *v = static_cast<VertexSE3*>(_vertices[0]);
     assert(v && "Vertex for the Prior edge is not set");
 
-    Isometry3 newEstimate = _offsetParam->offset().inverse() * Eigen::Translation3d(measurement());
+    Isometry3 newEstimate = _offsetParam->offset().inverse() * Eigen::Translation<number_t, 3>(measurement());
     if (_information.block<3,3>(0,0).array().abs().sum() == 0){ // do not set translation, as that part of the information is all zero
       newEstimate.translation() = v->estimate().translation();
     }

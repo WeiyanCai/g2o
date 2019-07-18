@@ -19,6 +19,7 @@
 // Foundation, Inc., 50 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include <iostream>
+#include <vector>
 #include "csparse_extension.h"
 
 #include "g2o/stuff/macros.h"
@@ -50,10 +51,19 @@ namespace csparse_extension {
     ok = (N != NULL) ;
     if (ok)
     {
-      cs_ipvec (S->pinv, b, x, n) ;   /* x = P*b */
-      cs_lsolve (N->L, x) ;           /* x = L\x */
-      cs_ltsolve (N->L, x) ;          /* x = L'\x */
-      cs_pvec (S->pinv, x, b, n) ;    /* b = P'*x */
+      std::vector<double> db(n);
+      std::copy_n(b, n, db.begin());
+      std::vector<double> dx(n);
+      std::copy_n(x, n, dx.begin());
+
+      cs_ipvec (S->pinv, db.data(), dx.data(), n) ;   /* x = P*b */
+      cs_lsolve (N->L, dx.data()) ;           /* x = L\x */
+      cs_ltsolve (N->L, dx.data()) ;          /* x = L'\x */
+      cs_pvec (S->pinv, dx.data(), db.data(), n) ;    /* b = P'*x */
+
+
+      std::copy_n(db.begin(), n, b);
+      std::copy_n(dx.begin(), n, x);
     }
     cs_nfree (N) ;
     return (ok) ;
@@ -66,7 +76,8 @@ namespace csparse_extension {
   /* L = chol (A, [pinv parent cp]), pinv is optional */
   csn* cs_chol_workspace (const cs *A, const css *S, int* cin, number_t* xin)
   {
-    number_t d, lki, *Lx, *x, *Cx ;
+    number_t d, lki, *x ;
+    double *Lx, *Cx;
     int top, i, p, k, n, *Li, *Lp, *cp, *pinv, *s, *c, *parent, *Cp, *Ci ;
     cs *L, *C, *E ;
     csn *N ;
@@ -92,7 +103,7 @@ namespace csparse_extension {
       x [k] = 0 ;                                 /* x (0:k) is now zero */
       for (p = Cp [k] ; p < Cp [k+1] ; p++)       /* x = full(triu(C(:,k))) */
       {
-        if (Ci [p] <= k) x [Ci [p]] = Cx [p] ;
+        if (Ci [p] <= k) x [Ci [p]] = (number_t)Cx [p] ;
       }
       d = x [k] ;                     /* d = C(k,k) */
       x [k] = 0 ;                     /* clear x for k+1st iteration */
@@ -100,7 +111,7 @@ namespace csparse_extension {
       for ( ; top < n ; top++)    /* solve L(0:k-1,0:k-1) * x = C(:,k) */
       {
         i = s [top] ;               /* s [top..n-1] is pattern of L(k,:) */
-        lki = x [i] / Lx [Lp [i]] ; /* L(k,i) = x (i) / L(i,i) */
+        lki = x [i] / (number_t)Lx [Lp [i]] ; /* L(k,i) = x (i) / L(i,i) */
         x [i] = 0 ;                 /* clear x for k+1st iteration */
         for (p = Lp [i] + 1 ; p < c [i] ; p++)
         {
